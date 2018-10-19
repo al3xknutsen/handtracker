@@ -1,71 +1,32 @@
 from ctypes import windll
-from threading import Thread
 from time import sleep
 
 import cv2
 from numpy import asarray
 
 
-class MultiThread(Thread):
-    def __init__(self, func):
-        self.func = func
-        Thread.__init__(self)
-    
-    def run(self):
-        self.func()
-
-
-# def interpolate_frames():
-    # sub_move = []
-    # while True:
-        # try:
-            # sleep(0.005)
-            # if len(sub_move) == 0 or movement in sub_move:
-                # sub_move.append(movement)
-            # if movement not in sub_move:
-                # print len(sub_move)
-                # del sub_move[:]
-            # windll.user32.SetCursorPos(*[screen_coords[i] + movement[i]/3 for i in [0, 1]])
-        # except NameError:
-            # continue
-    # # print len(sub_move)
-
-# interpolate = MultiThread(interpolate_frames)
-# interpolate.daemon = True
-# interpolate.start()
-
-### MAIN LOOP ###
-
 class TrackingAlgorithm:
     def __init__(self):
-        # Initializing webcam #
-        #self.camera = cv.CaptureFromCAM(0)
+        # Initializing webcam
         self.camera = cv2.VideoCapture(0)
         
         # Find screen and image dimensions
         screen = [float(windll.user32.GetSystemMetrics(x)) for x in [0, 1]]
         img = self.camera.read()[1]
-        #img_size = cv.GetSize(QueryFrame(self.camera))
+        
         self.size_diff = [screen[i] / img.shape[::-1][-2:][i] for i in [0, 1]]
         self.pixelcount = img.size
         
         self.last_position = [0, 0]
-        self.move_margin = 7
+        self.move_margin = 7  # If the movement in the image is smaller than this margin: Do not move the cursor!
     
     def trackloop(self):
-        while True:
+        while True:  # MAIN LOOP
             # Fetch webcam image #
-            #camshot = cv.QueryFrame(self.camera)
             self.img = self.camera.read()[1]
-            #self.img = cv2.flip(asarray(cv.GetMat(camshot)), 1)
             self.img_original = self.img = cv2.flip(self.img, 1)
             
-            #stabilization = self.slider_stabilization.GetValue()
-            #if stabilization > 0:
-            #   img_array = cv2.blur(self.img, (self.slider_stabilization.GetValue(), )*2) # Blur image
             self.img = cv2.blur(self.img, (20, 20)) # Blur image
-            #else:
-            #   img_array = self.img
             
             img_threshold = cv2.threshold(cv2.cvtColor(self.img, cv2.COLOR_RGB2GRAY), 216, 255, cv2.THRESH_BINARY) # Apply threshold
             
@@ -113,8 +74,6 @@ class TrackingAlgorithm:
                 
                 cv2.circle(self.img_original, tuple(self.average), 3, (0, 0, 255), -1)
         
-        #cv.ShowImage("HandTracker Debug", cv.fromarray(self.img))
-        #cv.WaitKey(10)
         cv2.imshow("HandTracker Debug", self.img_original)
         cv2.waitKey(10)
 
